@@ -3,18 +3,30 @@ package parser
 import (
 	"flag"
 	"strings"
-	"github.com/djordjev/scURL/data"
+	"sort"
 )
 
 const (
-	AddOperation = iota
-	RemoveOperation
-	ClearOperation
+	OperationAdd = iota
+	OperationRemove
+)
+
+const (
+	SubjectSession = iota
+	SubjectBaseApi
+	SubjectCookie
+	SubjectHeader
 )
 
 type ParseResult struct {
-	Op     data.SessionOperation
-	Action int
+	Operation int
+	Subject int
+	Key string
+	Value string
+}
+
+func makeParseResult (operation int, subject int, key string, value string) ParseResult {
+	return ParseResult{ operation, subject, key, value }
 }
 
 func ParseArguments() []ParseResult {
@@ -26,56 +38,55 @@ func ParseArguments() []ParseResult {
 	removeCookie := flag.String("rc", "", "requires -rc flag")
 	addHeader := flag.String("ah", "", "requires -ah flag")
 	removeHeader := flag.String("rh", "", "requires -ar flag")
+	addBaseApi := flag.String("aa", "", "requires -aa flag")
+	removeBaseApi := flag.Bool("ra", false, "requires -ra flag")
 
 	flag.Parse()
 
 	if *newSession == true {
-		result = append(result, ParseResult{ nil, ClearOperation})
+		result = append(result, makeParseResult(OperationAdd, SubjectSession, "", ""))
 	}
 
 	if *addCookie != "" {
 		split := strings.Split(*addCookie, "=")
-		result = append(result, ParseResult{
-			Op:   data.SessionOperation{
-				OpName:"cookie",
-				Key: split[0],
-				Value: split[1]},
-			Action: AddOperation,
-			})
+		result = append(result, makeParseResult(OperationAdd, SubjectCookie, split[0], split[1]))
 	}
 
 	if *removeCookie != "" {
-		result = append(result, ParseResult{
-			Op:   data.SessionOperation{
-				OpName:"cookie",
-				Key: *removeCookie,
-				Value: ""},
-			Action: RemoveOperation,
-		})
+		result = append(result, makeParseResult(OperationRemove, SubjectCookie, *removeCookie, ""))
 	}
 
 	if *addHeader != "" {
 		split := strings.Split(*addHeader, "=")
-		result = append(result, ParseResult{
-			Op:   data.SessionOperation{
-				OpName:"header",
-				Key: split[0],
-				Value: split[1]},
-			Action: AddOperation,
-		})
+		result = append(result, makeParseResult(OperationAdd, SubjectHeader, split[0], split[1]))
 	}
 
 	if *removeHeader != "" {
-		result = append(result, ParseResult{
-			Op:   data.SessionOperation{
-				OpName:"header",
-				Key: *removeHeader,
-				Value: ""},
-			Action: RemoveOperation,
-		})
+		result = append(result, makeParseResult(OperationRemove, SubjectHeader, *removeHeader, ""))
 	}
 
-	// TODO sort here
+	if *addBaseApi != "" {
+		result = append(result, makeParseResult(OperationAdd, SubjectBaseApi, *addBaseApi, ""))
+	}
+
+	if *removeBaseApi == true {
+		result = append(result, makeParseResult(OperationRemove, SubjectBaseApi, "", ""))
+	}
+
+	sort.Sort(BySubject(result))
+	// TODO failsafe check if some of operations are conflicting
 	return result
+}
+
+func ParseRequestArguments () (endpoint, requestType, body string) {
+	endpointFlag := flag.String("e", "", "endpoint for request")
+	requestTypeFlag := flag.String("X", "GET", "request type")
+	bodyData := flag.String("b", "", "request body")
+
+	endpoint = *endpointFlag
+	requestType = *requestTypeFlag
+	body = *bodyData
+
+	return
 }
 

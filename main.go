@@ -2,15 +2,15 @@ package main
 
 import (
 	"github.com/djordjev/scURL/parser"
-	"fmt"
 	"github.com/djordjev/scURL/session"
+	"github.com/djordjev/scURL/request"
 )
 
 func main() {
 	parsedOperations := parser.ParseArguments()
-	currentSession := session.LoadCurrentSession()
+	endpoint, requestType, body := parser.ParseRequestArguments()
 
-	for _, op := range parsedOperations {
-		fmt.Println(fmt.Sprintf("Get operation %d", op.Operation))
-	}
+	currentSession := session.UpdateCurrentSession(parsedOperations)
+
+	request.SendRequest(currentSession, endpoint, body, requestType)
 }
