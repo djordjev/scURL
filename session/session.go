@@ -1,17 +1,17 @@
 package session
 
 import (
-	"fmt"
 	"github.com/djordjev/scURL/data"
 	"io/ioutil"
 	"encoding/json"
-	"os"
 	"github.com/djordjev/scURL/parser"
 	"github.com/djordjev/scURL/utils"
 )
 
+const FILENAME = "session.scurl"
+
 func loadCurrentSession() data.JsonSession {
-	raw, err := ioutil.ReadFile("./session")
+	raw, err := ioutil.ReadFile(FILENAME)
 	if err != nil {
 		// this is OK situation, treat as empty session
 		return data.JsonSession{}
@@ -23,25 +23,16 @@ func loadCurrentSession() data.JsonSession {
 	return session
 }
 
-func storeCurrentSession(newSession *data.JsonSession) bool {
-	err := os.Truncate("./session", 0)
-	if err != nil {
-		fmt.Println("Unable to truncate file")
-		return false
-	}
-
+func storeCurrentSession(newSession *data.JsonSession) {
 	marshaled, err := json.Marshal(&newSession)
 	if err != nil {
-		fmt.Println("Unable to marshal files")
-		return false
+		panic("Unable to marshal files")
 	}
 
-	err = ioutil.WriteFile("output.json", marshaled, 0644)
+	err = ioutil.WriteFile(FILENAME, marshaled, 0666)
 	if err != nil {
-		fmt.Println("Unable to store in file")
-		return false
+		panic("Unable to store in file")
 	}
-	return true
 }
 
 func UpdateCurrentSession(parsedOperations []parser.ParseResult) data.JsonSession {
