@@ -4,6 +4,7 @@ import (
 	"flag"
 	"strings"
 	"sort"
+	"fmt"
 )
 
 const (
@@ -84,9 +85,25 @@ func ParseRequestArguments () (endpoint, requestType, body string) {
 	bodyData := flag.String("b", "", "request body")
 
 	endpoint = *endpointFlag
-	requestType = *requestTypeFlag
+	requestType = strings.ToUpper(*requestTypeFlag)
 	body = *bodyData
 
+	if !checkIsRequestTypeValid(requestType) {
+		panic(fmt.Sprintf("Request type %s is not valid request type", requestType))
+	}
+
 	return
+}
+
+func checkIsRequestTypeValid(reqType string) bool {
+	var validTypes = [...]string{"POST", "GET", "UPDATE", "DELETE", "PUT"}
+
+	for _, elem := range validTypes {
+		if elem == reqType {
+			return true
+		}
+	}
+
+	return false
 }
 
