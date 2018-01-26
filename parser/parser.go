@@ -26,13 +26,22 @@ type ParseResult struct {
 	Value string
 }
 
-func makeParseResult (operation int, subject int, key string, value string) ParseResult {
-	return ParseResult{ operation, subject, key, value }
+type args struct {
+	newSession bool
+	addCookie string
+	removeCookie string
+	addHeader string
+	removeHeader string
+	addBaseApi string
+	removeBaseApi bool
+	endpoint string
+	requestType string
+	body string
 }
 
-func ParseArguments() []ParseResult {
-	result := make([]ParseResult, 0)
+var programArgs args
 
+func init() {
 	// flag definitions
 	newSession := flag.Bool("n", false, "requires -n flag")
 	addCookie := flag.String("ac", "", "requires -ac flag")
@@ -41,36 +50,60 @@ func ParseArguments() []ParseResult {
 	removeHeader := flag.String("rh", "", "requires -ar flag")
 	addBaseApi := flag.String("aa", "", "requires -aa flag")
 	removeBaseApi := flag.Bool("ra", false, "requires -ra flag")
+	endpointFlag := flag.String("ep", "", "endpoint for request")
+	requestTypeFlag := flag.String("X", "GET", "request type")
+	bodyData := flag.String("b", "", "request body")
 
 	flag.Parse()
 
-	if *newSession == true {
+	programArgs = args{
+		newSession: *newSession,
+		addCookie: *addCookie,
+		removeCookie: *removeCookie,
+		addHeader: *addHeader,
+		removeHeader: *removeHeader,
+		addBaseApi: *addBaseApi,
+		removeBaseApi: *removeBaseApi,
+		endpoint: *endpointFlag,
+		requestType: *requestTypeFlag,
+		body: *bodyData,
+	}
+}
+
+func makeParseResult (operation int, subject int, key string, value string) ParseResult {
+	return ParseResult{ operation, subject, key, value }
+}
+
+func ParseArguments() []ParseResult {
+	result := make([]ParseResult, 0)
+
+	if programArgs.newSession == true {
 		result = append(result, makeParseResult(OperationAdd, SubjectSession, "", ""))
 	}
 
-	if *addCookie != "" {
-		split := strings.Split(*addCookie, "=")
+	if programArgs.addCookie != "" {
+		split := strings.Split(programArgs.addCookie, "=")
 		result = append(result, makeParseResult(OperationAdd, SubjectCookie, split[0], split[1]))
 	}
 
-	if *removeCookie != "" {
-		result = append(result, makeParseResult(OperationRemove, SubjectCookie, *removeCookie, ""))
+	if programArgs.removeCookie != "" {
+		result = append(result, makeParseResult(OperationRemove, SubjectCookie, programArgs.removeCookie, ""))
 	}
 
-	if *addHeader != "" {
-		split := strings.Split(*addHeader, "=")
+	if programArgs.addHeader != "" {
+		split := strings.Split(programArgs.addHeader, "=")
 		result = append(result, makeParseResult(OperationAdd, SubjectHeader, split[0], split[1]))
 	}
 
-	if *removeHeader != "" {
-		result = append(result, makeParseResult(OperationRemove, SubjectHeader, *removeHeader, ""))
+	if programArgs.removeHeader != "" {
+		result = append(result, makeParseResult(OperationRemove, SubjectHeader, programArgs.removeHeader, ""))
 	}
 
-	if *addBaseApi != "" {
-		result = append(result, makeParseResult(OperationAdd, SubjectBaseApi, *addBaseApi, ""))
+	if programArgs.addBaseApi != "" {
+		result = append(result, makeParseResult(OperationAdd, SubjectBaseApi, programArgs.addBaseApi, ""))
 	}
 
-	if *removeBaseApi == true {
+	if programArgs.removeBaseApi == true {
 		result = append(result, makeParseResult(OperationRemove, SubjectBaseApi, "", ""))
 	}
 
@@ -80,13 +113,13 @@ func ParseArguments() []ParseResult {
 }
 
 func ParseRequestArguments () (endpoint, requestType, body string) {
-	endpointFlag := flag.String("e", "", "endpoint for request")
-	requestTypeFlag := flag.String("X", "GET", "request type")
-	bodyData := flag.String("b", "", "request body")
 
-	endpoint = *endpointFlag
-	requestType = strings.ToUpper(*requestTypeFlag)
-	body = *bodyData
+
+	flag.Parse()
+
+	endpoint = programArgs.endpoint
+	requestType = strings.ToUpper(programArgs.requestType)
+	body = programArgs.body
 
 	if !checkIsRequestTypeValid(requestType) {
 		panic(fmt.Sprintf("Request type %s is not valid request type", requestType))
